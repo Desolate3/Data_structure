@@ -15,6 +15,7 @@ void InitStack(SqStack *s){
     s->top = -1; 
 }
 
+
 //入栈
 bool Push(SqStack *s, ElemType e){
     if(s->top >= MAXSIZE - 1){
