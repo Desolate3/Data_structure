@@ -48,6 +48,7 @@ bool GetQueue(SqQueue *q, ElemType *e){
     return true;
 }
 
+
 int main(){
     SqQueue Q;
     ElemType e;
