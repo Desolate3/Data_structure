@@ -54,7 +54,7 @@ bool GetTop(SqStack *s, ElemType *e){
     return true;
 }
 
-//获取栈顶元素
+//打印栈
 void printStack(SqStack *s){
     if(s->top == -1){
         printf("栈空，不打印\n");
