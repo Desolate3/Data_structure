@@ -87,7 +87,6 @@ int Index_KMP(String S, String T, int next[]){
     return 0;
 }
 
-
 int main(){
     String S;
     strcpy(S.ch, "abaacacabaabc");
