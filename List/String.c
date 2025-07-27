@@ -47,15 +47,59 @@ int Index(String S, String T){
     return 0;
 }
 
+//寻找字串--朴素模式匹配算法
+int Index2(String S, String T){
+    int i = 0;
+    int j = 0;
+    while(i < S.length && j < T.length){
+        if(S.ch[i] ==T.ch[j]){
+            i++;
+            j++;
+        }
+        else {
+            i = i -j + 1;
+            j = 0;
+        }
+        if(j == T.length){
+            return i - j + 1;
+        }
+
+    }
+    return 0;
+}
+
+//寻找子串--KMP算法
+int Index_KMP(String S, String T, int next[]){
+    int i = 0;
+    int j = 0;
+    while(i < S.length && j < T.length){
+        if(j == -1 || S.ch[i] ==T.ch[j]){
+            i++;
+            j++;
+        }
+        else {
+            j = next[j];
+        }
+        if(j == T.length){
+            return i - j + 1;
+        }
+    }
+    return 0;
+}
+
 int main(){
     String S;
-    strcpy(S.ch, "abcdefgh");
+    strcpy(S.ch, "abaacacabaabc");
     S.length = strlen(S.ch);
 
     String T;
-    strcpy(T.ch, "abcdefg");
+    strcpy(T.ch, "abaabc");
     T.length = strlen(T.ch);
 
+    //KMP算法的next数组
+    int next[] = {-1, 0, 0, 1, 1, 2};
+
+    // 测试字符串大小对比函数
     int cmp = StrCompare(S, T);
     if(cmp == 0){
         printf("S和T相等\n");
@@ -67,7 +111,8 @@ int main(){
         printf("S大于T\n");
     }
 
-    int index = Index(S, T);
+    // 测试寻找子串函数
+    int index = Index_KMP(S, T, next);
     if(index != 0){
         printf("T在S中的位置是: %d\n", index);
     }
