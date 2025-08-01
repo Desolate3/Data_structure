@@ -31,6 +31,8 @@ typedef struct MGraph {
 } MGraph;
 
 bool visited[MAXSIZE]; //访问标志数组
+int path[MAXSIZE]; //存储路径
+int dist[MAXSIZE]; //存储最短路径长度
 
 //定义队列结构
 typedef int ElemType;
@@ -40,6 +42,40 @@ typedef struct {
     int rear;
 } SqQueue;
 
+//定义栈结构
+typedef struct{
+    ElemType data[MAXSIZE];
+    int top; 
+}SqStack;
+
+
+
+//初始化栈
+void InitStack(SqStack *s){
+    s->top = -1; 
+}
+
+
+//入栈
+bool Push(SqStack *s, ElemType e){
+    if(s->top >= MAXSIZE - 1){
+        printf("栈已满，无法入栈");
+        return false;
+    }
+    s->top = s->top + 1;
+    s->data[s->top] = e;
+    return true;
+}
+
+//出栈
+bool Pop(SqStack *s){
+    if(s->top == -1){
+        printf("栈空，无法出栈");
+        return false;
+    }
+    s->top = s->top - 1;
+    return true;
+}
 //初始化队列
 void InitQueue(SqQueue *q) {
     q->front = 0;
@@ -67,6 +103,7 @@ bool DeQueue(SqQueue *q){
     return true;
 }
 
+//访问顶点函数
 void visit(VertexType v) {
     printf("%c ", v);
 }
@@ -124,6 +161,12 @@ void InitGraph(MGraph *G) {
     for (int i = 0; i < MAXSIZE; i++) {
         visited[i] = false;
     }
+
+    // 初始化路径和最短路径长度数组
+    for (int i = 0; i < MAXSIZE; i++) {
+        path[i] = -1; // -1表示未访问
+        dist[i] = MAXSIZE; // 初始化为最大值
+    }
 }
 
 //图的广度优先遍历
@@ -132,13 +175,12 @@ void BFS(MGraph *G, int v){
     InitQueue(&q);
     EnQueue(&q, v);
     visited[v] = true;
-    while (q.front != q.rear) {
+    while (q.front != q.rear){
         visit(G->Vex[v]);
         DeQueue(&q);
         
-        
-        for (int i = 0; i < G->vernum; i++) {
-            if (G->Edge[v][i] != 0 && visited[i] == false) {
+        for (int i = 0; i < G->vernum; i++){
+            if (G->Edge[v][i] != 0 && visited[i] == false){
                 EnQueue(&q, i);
                 visited[i] = true;
             }
@@ -147,9 +189,81 @@ void BFS(MGraph *G, int v){
     }
 }
 
+//图的深度优先遍历
+void DFS(MGraph *G, int v){
+    SqStack s;
+    InitStack(&s);
+    Push(&s, v);
+    visited[v] = true;
+    while (s.top != -1){
+        visit(G->Vex[v]);
+        Pop(&s);
+
+        for (int i = 0; i < G->vernum; i++){
+            if (G->Edge[v][i] != 0 && visited[i] == false){
+                Push(&s, i);
+                visited[i] = true;
+            }
+        }
+        v = s.data[s.top]; 
+    }
+}
+
+//广度优先遍历求顶点v到各个顶点的最短路径
+void BFS_min_distance(MGraph *G, int v){
+    SqQueue q;
+    InitQueue(&q);
+    EnQueue(&q, v);
+    dist[v] = 0; 
+    visited[v] = true;
+    while (q.front != q.rear){
+        DeQueue(&q);
+        
+        for (int i = 0; i < G->vernum; i++){
+            if (G->Edge[v][i] != 0 && visited[i] == false){
+                dist[i] = dist[v] + 1;
+                path[i] = v;
+                EnQueue(&q, i);
+                visited[i] = true;
+            }
+        }
+        v = q.data[q.front];
+    }
+}
+
+void print(MGraph *G, int path[], int dist[]){
+    for(int i = 0; i < G->vernum; i++){
+        printf("%d ", path[i]);
+    }
+    printf("\n");
+    for(int i = 0; i < G->vernum; i++){
+        printf("%d ", dist[i]);
+    }
+}
+
 int main(){
     MGraph G;
     InitGraph(&G);
-    BFS(&G, 0); 
+
+    printf("广度优先遍历的顶点序列：");
+    BFS(&G, 1); 
+    printf("\n");
+
+    for (int i = 0; i < MAXSIZE; i++){
+        visited[i] = false; // 重置访问标志数组
+    }
+
+    printf("深度优先遍历的顶点序列：");
+    DFS(&G, 1);
+    printf("\n");
+
+    for (int i = 0; i < MAXSIZE; i++){
+        visited[i] = false; // 重置访问标志数组
+    }
+
+    printf("各个顶点的前缀和从顶点1到各个顶点的最短长度：\n");
+    BFS_min_distance(&G, 1);
+    print(&G, path, dist);
+    printf("\n");
     return 0;
 }
