@@ -33,6 +33,7 @@ typedef struct MGraph {
 bool visited[MAXSIZE]; //访问标志数组
 int path[MAXSIZE]; //存储路径
 int dist[MAXSIZE]; //存储最短路径长度
+int Path[MAXSIZE][MAXSIZE]; //存储路径矩阵
 
 //定义队列结构
 typedef int ElemType;
@@ -124,7 +125,7 @@ void InitGraph(MGraph *G) {
     // 初始化邻接矩阵（全部设为0，表示无边）
     for (int i = 0; i < G->vernum; i++) {
         for (int j = 0; j < G->vernum; j++) {
-            G->Edge[i][j] = 0;
+            G->Edge[i][j] = MAXSIZE; // 使用MAXSIZE表示无边
         }
     }
     
@@ -156,7 +157,7 @@ void InitGraph(MGraph *G) {
     // 边 D-E
     G->Edge[3][4] = 1;
     G->Edge[4][3] = 1;
-    
+
     // 初始化访问标志数组
     for (int i = 0; i < MAXSIZE; i++) {
         visited[i] = false;
@@ -166,6 +167,12 @@ void InitGraph(MGraph *G) {
     for (int i = 0; i < MAXSIZE; i++) {
         path[i] = -1; // -1表示未访问
         dist[i] = MAXSIZE; // 初始化为最大值
+    }
+    // 初始化路径矩阵
+    for (int i = 0; i < MAXSIZE; i++) {
+        for (int j = 0; j < MAXSIZE; j++) {
+            Path[i][j] = -1; // 初始化为-1，表示无路径
+        }
     }
 }
 
@@ -231,6 +238,7 @@ void BFS_min_distance(MGraph *G, int v){
     }
 }
 
+// 打印路径和最短路径长度
 void print(MGraph *G, int path[], int dist[]){
     for(int i = 0; i < G->vernum; i++){
         printf("%d ", path[i]);
@@ -238,6 +246,27 @@ void print(MGraph *G, int path[], int dist[]){
     printf("\n");
     for(int i = 0; i < G->vernum; i++){
         printf("%d ", dist[i]);
+    }
+}
+
+void Floyd(MGraph *G) {
+    for(int k = 0; k < G->vernum; k++) {
+        for(int i = 0; i < G->vernum; i++) {
+            for(int j = 0; j < G->vernum; j++) {
+                if(G->Edge[i][j] > G->Edge[i][k] + G->Edge[k][j]) {
+                    G->Edge[i][j] = G->Edge[i][k] + G->Edge[k][j];
+                    Path[i][j] = k; // 更新路径
+                }
+            }
+        }
+    }
+    // 更新最短路径长度
+    printf("Floyd算法计算后的两顶点间的最短路径为：\n");
+    for(int i = 0; i < G->vernum; i++) {
+        for(int j = 0; j < G->vernum; j++) {
+            printf("%d ", G->Edge[i][j]);
+        }
+        printf("\n");
     }
 }
 
@@ -265,5 +294,7 @@ int main(){
     BFS_min_distance(&G, 1);
     print(&G, path, dist);
     printf("\n");
+
+    Floyd(&G);
     return 0;
 }
