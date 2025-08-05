@@ -13,6 +13,7 @@ typedef struct{
     QueueNode *rear;
 } CircularLinkedQueue;
 
+
 //初始化队列
 void InitQueue(CircularLinkedQueue *q){
     QueueNode *node = (QueueNode *)malloc(sizeof(QueueNode));
