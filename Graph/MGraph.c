@@ -274,6 +274,7 @@ int main(){
     MGraph G;
     InitGraph(&G);
 
+    
     printf("广度优先遍历的顶点序列：");
     BFS(&G, 1); 
     printf("\n");
