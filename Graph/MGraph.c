@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #define MAXSIZE 100
+#define INFINITY 65535 // 表示无穷大
 
 typedef char VertexType;
 typedef int EdgeType;
@@ -49,7 +50,9 @@ typedef struct{
     int top; 
 }SqStack;
 
-
+// 新添加的拓扑排序相关数据结构
+int indegree[MAXSIZE]; // 存储每个顶点的入度
+int print[MAXSIZE];    // 存储拓扑排序结果
 
 //初始化栈
 void InitStack(SqStack *s){
@@ -69,14 +72,16 @@ bool Push(SqStack *s, ElemType e){
 }
 
 //出栈
-bool Pop(SqStack *s){
+bool Pop(SqStack *s, ElemType *e){ // 修改了Pop函数，使其能返回栈顶元素
     if(s->top == -1){
         printf("栈空，无法出栈");
         return false;
     }
+    *e = s->data[s->top];
     s->top = s->top - 1;
     return true;
 }
+
 //初始化队列
 void InitQueue(SqQueue *q) {
     q->front = 0;
@@ -95,11 +100,12 @@ bool EnQueue(SqQueue *q, ElemType e) {
 }
 
 //出队
-bool DeQueue(SqQueue *q){
+bool DeQueue(SqQueue *q, ElemType *e){ // 修改了DeQueue函数，使其能返回队头元素
     if(q->front == q->rear){
         printf("队列为空，无法出队");
         return false;
     }
+    *e = q->data[q->front];
     q->front = (q->front + 1) % MAXSIZE;
     return true;
 }
@@ -109,7 +115,7 @@ void visit(VertexType v) {
     printf("%c ", v);
 }
 
-// 初始化图函数
+// 初始化图函数 - 修改为有向图
 void InitGraph(MGraph *G) {
     // 初始化顶点数和边数
     G->vernum = 5;
@@ -122,41 +128,43 @@ void InitGraph(MGraph *G) {
     G->Vex[3] = 'D';
     G->Vex[4] = 'E';
     
-    // 初始化邻接矩阵（全部设为0，表示无边）
+    // 初始化邻接矩阵（全部设为INFINITY，表示无边）
     for (int i = 0; i < G->vernum; i++) {
         for (int j = 0; j < G->vernum; j++) {
-            G->Edge[i][j] = MAXSIZE; // 使用MAXSIZE表示无边
+            G->Edge[i][j] = INFINITY;
         }
+        G->Edge[i][i] = 0; // 对角线设为0
     }
     
-    // 设置边（无向图，对称矩阵）
-    // // 边 A-B
-    // G->Edge[0][1] = 1;
-    // G->Edge[1][0] = 1;
+    // 初始化入度数组
+    for (int i = 0; i < G->vernum; i++) {
+        indegree[i] = 0;
+    }
     
-    // 边 A-C
+    // 设置边（有向图）
+    // A->C
     G->Edge[0][2] = 1;
-    G->Edge[2][0] = 1;
+    indegree[2]++;
     
-    // 边 B-C
+    // B->A
+    G->Edge[1][0] = 1;
+    indegree[0]++;
+    
+    // B->C
     G->Edge[1][2] = 1;
-    G->Edge[2][1] = 1;
+    indegree[2]++;
     
-    // 边 B-D
+    // B->D
     G->Edge[1][3] = 1;
-    G->Edge[3][1] = 1;
+    indegree[3]++;
     
-    // 边 B-E
-    G->Edge[1][4] = 1;
-    G->Edge[4][1] = 1;
-    
-    // 边 C-D
+    // C->D
     G->Edge[2][3] = 1;
-    G->Edge[3][2] = 1;
+    indegree[3]++;
     
-    // 边 D-E
+    // D->E
     G->Edge[3][4] = 1;
-    G->Edge[4][3] = 1;
+    indegree[4]++;
 
     // 初始化访问标志数组
     for (int i = 0; i < MAXSIZE; i++) {
@@ -165,14 +173,50 @@ void InitGraph(MGraph *G) {
 
     // 初始化路径和最短路径长度数组
     for (int i = 0; i < MAXSIZE; i++) {
-        path[i] = -1; // -1表示未访问
-        dist[i] = MAXSIZE; // 初始化为最大值
+        path[i] = -1;
+        dist[i] = INFINITY;
     }
+    
     // 初始化路径矩阵
     for (int i = 0; i < MAXSIZE; i++) {
         for (int j = 0; j < MAXSIZE; j++) {
-            Path[i][j] = -1; // 初始化为-1，表示无路径
+            Path[i][j] = -1;
         }
+    }
+}
+
+// 拓扑排序
+bool TopologicalSort(MGraph G) {
+    SqStack S;
+    InitStack(&S);
+    int count = 0;
+    
+    // 将所有入度为0的顶点入栈
+    for (int i = 0; i < G.vernum; i++) {
+        if (indegree[i] == 0) {
+            Push(&S, i);
+        }
+    }
+    
+    while (S.top != -1) {
+        int v;
+        Pop(&S, &v);
+        print[count++] = v; // 记录拓扑序列
+        
+        //遍历v的所有邻接点
+        for (int w = 0; w < G.vernum; w++) {
+            if (G.Edge[v][w] != INFINITY) { 
+                if (--indegree[w] == 0) {   
+                    Push(&S, w);
+                }
+            }
+        }
+    }
+    
+    if (count < G.vernum) {
+        return false;
+    } else {
+        return true; 
     }
 }
 
@@ -180,16 +224,19 @@ void InitGraph(MGraph *G) {
 void BFS(MGraph *G, int v){
     SqQueue q;
     InitQueue(&q);
-    EnQueue(&q, v);
+    visit(G->Vex[v]);
     visited[v] = true;
+    EnQueue(&q, v);
+    
     while (q.front != q.rear){
-        visit(G->Vex[v]);
-        DeQueue(&q);
+        int u;
+        DeQueue(&q, &u);
         
         for (int i = 0; i < G->vernum; i++){
-            if (G->Edge[v][i] != 0 && visited[i] == false){
-                EnQueue(&q, i);
+            if (G->Edge[u][i] != INFINITY && !visited[i]){
+                visit(G->Vex[i]);
                 visited[i] = true;
+                EnQueue(&q, i);
             }
         }
         v = q.data[q.front];
@@ -198,21 +245,13 @@ void BFS(MGraph *G, int v){
 
 //图的深度优先遍历
 void DFS(MGraph *G, int v){
-    SqStack s;
-    InitStack(&s);
-    Push(&s, v);
+    visit(G->Vex[v]);
     visited[v] = true;
-    while (s.top != -1){
-        visit(G->Vex[v]);
-        Pop(&s);
-
-        for (int i = 0; i < G->vernum; i++){
-            if (G->Edge[v][i] != 0 && visited[i] == false){
-                Push(&s, i);
-                visited[i] = true;
-            }
+    
+    for (int i = 0; i < G->vernum; i++){
+        if (G->Edge[v][i] != INFINITY && !visited[i]){
+            DFS(G, i);
         }
-        v = s.data[s.top]; 
     }
 }
 
@@ -220,51 +259,75 @@ void DFS(MGraph *G, int v){
 void BFS_min_distance(MGraph *G, int v){
     SqQueue q;
     InitQueue(&q);
-    EnQueue(&q, v);
-    dist[v] = 0; 
+    
+    for (int i = 0; i < G->vernum; i++) {
+        dist[i] = INFINITY;
+        path[i] = -1;
+    }
+    
+    dist[v] = 0;
     visited[v] = true;
+    EnQueue(&q, v);
+    
     while (q.front != q.rear){
-        DeQueue(&q);
+        int u;
+        DeQueue(&q, &u);
         
         for (int i = 0; i < G->vernum; i++){
-            if (G->Edge[v][i] != 0 && visited[i] == false){
-                dist[i] = dist[v] + 1;
-                path[i] = v;
-                EnQueue(&q, i);
+            if (G->Edge[u][i] != INFINITY && !visited[i]){
+                dist[i] = dist[u] + 1;
+                path[i] = u;
                 visited[i] = true;
+                EnQueue(&q, i);
             }
         }
         v = q.data[q.front];
     }
 }
 
-// 打印路径和最短路径长度
-void print(MGraph *G, int path[], int dist[]){
+//打印路径和最短路径长度
+void printPathAndDist(MGraph *G, int path[], int dist[]){
+    printf("前驱顶点: ");
     for(int i = 0; i < G->vernum; i++){
         printf("%d ", path[i]);
     }
-    printf("\n");
+    printf("\n最短距离: ");
     for(int i = 0; i < G->vernum; i++){
         printf("%d ", dist[i]);
     }
+    printf("\n");
 }
 
 void Floyd(MGraph *G) {
+    //初始化路径矩阵
+    for(int i = 0; i < G->vernum; i++) {
+        for(int j = 0; j < G->vernum; j++) {
+            Path[i][j] = -1;
+            if (G->Edge[i][j] < INFINITY && i != j) {
+                Path[i][j] = i;
+            }
+        }
+    }
+    
     for(int k = 0; k < G->vernum; k++) {
         for(int i = 0; i < G->vernum; i++) {
             for(int j = 0; j < G->vernum; j++) {
-                if(G->Edge[i][j] > G->Edge[i][k] + G->Edge[k][j]) {
+                if(G->Edge[i][k] + G->Edge[k][j] < G->Edge[i][j]) {
                     G->Edge[i][j] = G->Edge[i][k] + G->Edge[k][j];
-                    Path[i][j] = k; // 更新路径
+                    Path[i][j] = Path[k][j];
                 }
             }
         }
     }
-    // 更新最短路径长度
-    printf("Floyd算法计算后的两顶点间的最短路径为：\n");
+    
+    printf("Floyd算法计算后的最短路径矩阵:\n");
     for(int i = 0; i < G->vernum; i++) {
         for(int j = 0; j < G->vernum; j++) {
-            printf("%d ", G->Edge[i][j]);
+            if (G->Edge[i][j] == INFINITY) {
+                printf("INF ");
+            } else {
+                printf("%3d ", G->Edge[i][j]);
+            }
         }
         printf("\n");
     }
@@ -274,13 +337,12 @@ int main(){
     MGraph G;
     InitGraph(&G);
 
-    
     printf("广度优先遍历的顶点序列：");
     BFS(&G, 1); 
     printf("\n");
 
     for (int i = 0; i < MAXSIZE; i++){
-        visited[i] = false; // 重置访问标志数组
+        visited[i] = false;
     }
 
     printf("深度优先遍历的顶点序列：");
@@ -288,14 +350,31 @@ int main(){
     printf("\n");
 
     for (int i = 0; i < MAXSIZE; i++){
-        visited[i] = false; // 重置访问标志数组
+        visited[i] = false;
     }
 
     printf("各个顶点的前缀和从顶点1到各个顶点的最短长度：\n");
     BFS_min_distance(&G, 1);
-    print(&G, path, dist);
+    printPathAndDist(&G, path, dist);
     printf("\n");
 
     Floyd(&G);
+    
+    printf("\n");
+
+    for (int i = 0; i < MAXSIZE; i++) {
+        visited[i] = false;
+    }
+    
+    printf("拓扑排序结果：");
+    if (TopologicalSort(G)) {
+        for (int i = 0; i < G.vernum; i++) {
+            printf("%c ", G.Vex[print[i]]);
+        }
+        printf("\n");
+    } else {
+        printf("图中存在环，无法进行拓扑排序!\n");
+    }
+    
     return 0;
 }
